@@ -3,6 +3,49 @@ import { PlaceHolderImages } from './placeholder-images';
 
 const getImage = (id: string) => PlaceHolderImages.find(img => img.id === id) || PlaceHolderImages[0];
 
+export const getBooksBySubject = async (subject: string, limit = 10): Promise<Book[]> => {
+  try {
+    const response = await fetch(`https://openlibrary.org/subjects/${subject}.json?limit=${limit}`);
+    if (!response.ok) {
+      console.error('Failed to fetch books for subject:', subject);
+      return [];
+    }
+    const data = await response.json();
+
+    const books: Book[] = data.works.map((work: any, index: number) => {
+      const isbn = work.isbn_13?.[0] || work.isbn_10?.[0] || `OLID:${work.cover_edition_key}`;
+      const coverId = work.cover_id;
+      const coverImage = coverId
+        ? {
+            id: `cover-${work.key}`,
+            imageUrl: `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`,
+            description: `Cover of ${work.title}`,
+            imageHint: 'book cover'
+          }
+        : getImage(`book-cover-${(index % 12) + 1}`);
+
+      return {
+        id: work.key.replace('/works/', ''),
+        title: work.title,
+        author: work.authors?.[0]?.name || 'Unknown Author',
+        price: parseFloat((Math.random() * (20 - 10) + 10).toFixed(2)), // Placeholder price
+        coverImage,
+        categories: work.subject || [],
+        description: typeof work.description === 'string' ? work.description : 'No description available.',
+        rating: work.average_rating ? parseFloat(work.average_rating.toFixed(1)) : parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
+        pageCount: work.edition_count, // Not always accurate page count
+        publishedDate: work.first_publish_year?.toString() || 'N/A',
+        isbn: isbn,
+      };
+    }).filter((book: Book) => book.coverImage.imageUrl.includes('covers.openlibrary.org')); // Only include books with covers
+
+    return books;
+  } catch (error) {
+    console.error('Error fetching books from Open Library:', error);
+    return [];
+  }
+};
+
 export const books: Book[] = [
   {
     id: '1',
@@ -166,8 +209,11 @@ export const books: Book[] = [
 export const categories: Category[] = [
     { id: 'fiction', name: 'Fiction', image: getImage('category-fiction') },
     { id: 'non-fiction', name: 'Non-Fiction', image: getImage('category-non-fiction') },
-    { id: 'science-fiction', name: 'Science Fiction', image: getImage('category-science') },
+    { id: 'science_fiction', name: 'Science Fiction', image: getImage('category-science') },
     { id: 'fantasy', name: 'Fantasy', image: getImage('category-fiction') },
     { id: 'business', name: 'Business', image: getImage('category-business') },
     { id: 'history', name: 'History', image: getImage('category-non-fiction') },
+    { id: 'love', name: 'Romance', image: getImage('book-cover-12')},
+    { id: 'mystery', name: 'Mystery', image: getImage('book-cover-11')},
+    { id: 'thriller', name: 'Thriller', image: getImage('book-cover-12')}
   ];

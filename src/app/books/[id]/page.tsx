@@ -1,20 +1,69 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { Star, Plus, Minus, BookOpen } from 'lucide-react';
-import { books } from '@/lib/data';
-import { Button } from '@/components/ui/button';
+import { Star, BookOpen } from 'lucide-react';
+import { getBooksBySubject } from '@/lib/data';
 import { BookCard } from '@/components/book-card';
 import { Separator } from '@/components/ui/separator';
 import AddToCartButton from './add-to-cart-button';
+import type { Book } from '@/lib/types';
 
-export default function BookDetailPage({ params }: { params: { id: string } }) {
-  const book = books.find(b => b.id === params.id);
+async function getBookDetails(id: string): Promise<Book | null> {
+  try {
+    const response = await fetch(`https://openlibrary.org/works/${id}.json`);
+    if (!response.ok) return null;
+    const work = await response.json();
+
+    let description = 'No description available.';
+    if (work.description) {
+      description = typeof work.description === 'string' ? work.description : work.description.value;
+    }
+
+    const authorsResponse = await fetch(`https://openlibrary.org${work.authors[0].author.key}.json`);
+    const authorData = await authorsResponse.json();
+
+    const coverId = work.covers?.[0];
+    const coverImage = coverId
+        ? {
+            id: `cover-${work.key}`,
+            imageUrl: `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`,
+            description: `Cover of ${work.title}`,
+            imageHint: 'book cover'
+          }
+        : {
+            id: 'default-cover',
+            imageUrl: 'https://picsum.photos/seed/book/400/600',
+            description: 'Default book cover',
+            imageHint: 'book cover'
+        };
+
+    const book: Book = {
+      id: id,
+      title: work.title,
+      author: authorData.name || 'Unknown Author',
+      price: parseFloat((Math.random() * (20 - 10) + 10).toFixed(2)), // Placeholder price
+      coverImage,
+      categories: work.subjects?.slice(0, 3) || [],
+      description,
+      rating: work.ratings_average ? parseFloat(work.ratings_average.toFixed(1)) : parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
+      pageCount: work.number_of_pages || 0,
+      publishedDate: work.first_publish_date || 'N/A',
+      isbn: work.isbn_13?.[0] || work.isbn_10?.[0] || 'N/A',
+    };
+    return book;
+  } catch (error) {
+    console.error("Failed to fetch book details:", error);
+    return null;
+  }
+}
+
+export default async function BookDetailPage({ params }: { params: { id: string } }) {
+  const book = await getBookDetails(params.id);
 
   if (!book) {
     notFound();
   }
   
-  const relatedBooks = books.filter(b => b.categories.some(cat => book.categories.includes(cat)) && b.id !== book.id).slice(0, 4);
+  const relatedBooks = book.categories.length > 0 ? (await getBooksBySubject(book.categories[0].toLowerCase().replace(/ /g, '_'), 5)).filter(b => b.id !== book.id).slice(0, 4) : [];
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-16">
@@ -47,8 +96,8 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
           <p className="text-lg leading-relaxed text-foreground/80">{book.description}</p>
           
           <div className="grid grid-cols-2 gap-4 text-sm bg-muted/50 p-4 rounded-lg">
-             <div className="flex items-center gap-2"><BookOpen className="h-4 w-4"/><span>{book.pageCount} pages</span></div>
-             <div className="flex items-center gap-2"><span>Published: {new Date(book.publishedDate).toLocaleDateString()}</span></div>
+             <div className="flex items-center gap-2"><BookOpen className="h-4 w-4"/><span>{book.pageCount > 0 ? `${book.pageCount} pages` : 'N/A'}</span></div>
+             <div className="flex items-center gap-2"><span>Published: {book.publishedDate}</span></div>
              <div className="flex items-center gap-2"><span>ISBN: {book.isbn}</span></div>
              <div className="flex items-center gap-2"><span>Categories: {book.categories.join(', ')}</span></div>
           </div>
@@ -79,11 +128,4 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
       )}
     </div>
   );
-}
-
-// To support static generation for all book pages
-export async function generateStaticParams() {
-  return books.map(book => ({
-    id: book.id,
-  }));
 }

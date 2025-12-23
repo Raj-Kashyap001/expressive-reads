@@ -10,13 +10,14 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { books } from '@/lib/data';
+import { getBooksBySubject } from '@/lib/data';
 import { BookCard } from '@/components/book-card';
 import Recommendations from '@/components/recommendations';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-export default function Home() {
-  const newArrivals = [...books].sort((a, b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()).slice(0, 8);
+export default async function Home() {
+  const newArrivals = await getBooksBySubject('new', 8);
+  const featured = await getBooksBySubject('thriller', 4);
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-image-1');
 
   return (
@@ -94,7 +95,7 @@ export default function Home() {
       <section className="container mx-auto px-4">
         <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Featured Collections</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {books.slice(4, 8).map((book) => (
+          {featured.map((book) => (
             <BookCard key={book.id} book={book} />
           ))}
         </div>

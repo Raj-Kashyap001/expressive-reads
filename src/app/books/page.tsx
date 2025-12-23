@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BookCard } from '@/components/book-card';
-import { books, categories } from '@/lib/data';
+import { categories, getBooksBySubject } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -11,21 +11,50 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import type { Book } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function BookCardSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-[300px] w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-10 w-10 rounded-full" />
+      </div>
+    </div>
+  );
+}
 
 export default function BooksPage() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
   const initialSearch = searchParams.get('q') || '';
   
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [priceRange, setPriceRange] = useState([0, 20]);
 
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setIsLoading(true);
+      const subject = selectedCategory === 'all' ? 'fiction' : selectedCategory;
+      const fetchedBooks = await getBooksBySubject(subject, 40);
+      setBooks(fetchedBooks);
+      setIsLoading(false);
+    };
+
+    fetchBooks();
+  }, [selectedCategory]);
+
   const filteredBooks = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) || book.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || book.categories.map(c => c.toLowerCase().replace(' ', '-')).includes(selectedCategory);
     const matchesPrice = book.price >= priceRange[0] && book.price <= priceRange[1];
-    return matchesSearch && matchesCategory && matchesPrice;
+    return matchesSearch && matchesPrice;
   });
   
   const handleResetFilters = () => {
@@ -107,7 +136,13 @@ export default function BooksPage() {
         </aside>
 
         <main className="lg:col-span-3">
-          {filteredBooks.length > 0 ? (
+          {isLoading ? (
+             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <BookCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredBooks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredBooks.map(book => (
                 <BookCard key={book.id} book={book} />

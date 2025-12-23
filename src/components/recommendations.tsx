@@ -1,7 +1,8 @@
 import { getPersonalizedBookRecommendations, type PersonalizedBookRecommendationsInput } from '@/ai/flows/personalized-book-recommendations';
 import { BookCard } from './book-card';
-import { books } from '@/lib/data';
+import { getBooksBySubject } from '@/lib/data';
 import { Lightbulb } from 'lucide-react';
+import type { Book } from '@/lib/types';
 
 // This is a server component
 export default async function Recommendations() {
@@ -20,45 +21,53 @@ export default async function Recommendations() {
     },
   ];
 
-  let recommendations = [];
+  let recommendations: (Book & { reason: string })[] = [];
   try {
     const result = await getPersonalizedBookRecommendations({
       browsingHistory,
       numberOfRecommendations: 4,
     });
     
-    // The AI might return books not in our mock DB. We will map them to our DB or create temporary book objects.
-    // For this demo, let's try to find them in our mock `books` data.
-    recommendations = result.recommendations.map((rec, index) => {
-      const existingBook = books.find(b => b.title.toLowerCase() === rec.title.toLowerCase());
-      if (existingBook) {
-        return { ...existingBook, reason: rec.reason };
-      }
-      // If book not in DB, create a temporary one for display
-      return {
-        id: `ai-${index}`,
-        title: rec.title,
-        author: rec.author,
-        price: 14.99, // a default price
-        coverImage: books[index % books.length].coverImage, // use a random cover
-        categories: rec.categories,
-        description: rec.reason,
-        rating: 4.5,
-        pageCount: 300,
-        publishedDate: '2022-01-01',
-        isbn: '000-0-00-000000-0',
-        reason: rec.reason
-      };
-    });
+    const recBooks = await Promise.all(
+      result.recommendations.map(async (rec, index) => {
+        // Since we don't have a reliable way to search by title/author with the subject endpoint,
+        // we'll fetch a list of books and see if we can find a match.
+        // A better approach would be to use the search API if available.
+        const booksFromApi = await getBooksBySubject(rec.categories[0] || 'fiction', 20);
+        const existingBook = booksFromApi.find(b => b.title.toLowerCase().includes(rec.title.toLowerCase()));
+
+        if (existingBook) {
+          return { ...existingBook, reason: rec.reason };
+        }
+
+        // Fallback for AI-generated book not in the list from the API
+        const fallbackBook = booksFromApi.length > index ? booksFromApi[index] : null;
+        if(fallbackBook) {
+            return {
+                ...fallbackBook,
+                title: rec.title, // Use AI title
+                author: rec.author, // Use AI author
+                reason: rec.reason 
+            };
+        }
+
+        return null;
+      })
+    );
+    
+    recommendations = recBooks.filter((b): b is Book & { reason: string } => b !== null);
+
 
   } catch (error) {
     console.error("Failed to get AI recommendations:", error);
     // Fallback to showing some popular books if AI fails
-    recommendations = books.slice(0, 4).map(b => ({...b, reason: "Popular this week"}));
+    const fallbackBooks = await getBooksBySubject('popular', 4);
+    recommendations = fallbackBooks.map(b => ({...b, reason: "Popular this week"}));
   }
 
   if (recommendations.length === 0) {
-    return null;
+     const fallbackBooks = await getBooksBySubject('popular', 4);
+    recommendations = fallbackBooks.map(b => ({...b, reason: "Popular this week"}));
   }
 
   return (

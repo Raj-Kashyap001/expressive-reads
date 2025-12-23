@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/app-context';
 import { CartSheet } from './cart-sheet';
 import React from 'react';
+import { ThemeToggle } from './theme-toggle';
 
 const navLinks = [
   { href: '/books', label: 'Books' },
@@ -56,7 +58,7 @@ export function Header() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div className="hidden lg:block relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -65,6 +67,8 @@ export function Header() {
                 className="w-full rounded-full bg-muted pl-10 h-11"
               />
             </div>
+
+            <ThemeToggle />
 
             <Button asChild variant="ghost" size="icon" className="hidden md:inline-flex rounded-full">
               <Link href="/wishlist">

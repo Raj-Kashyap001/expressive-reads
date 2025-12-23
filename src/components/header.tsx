@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BookHeart, Menu, Search, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { useCart } from '@/contexts/app-context';
 import { CartSheet } from './cart-sheet';
 import React from 'react';
 import { ThemeToggle } from './theme-toggle';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/books', label: 'Books' },
@@ -21,6 +23,7 @@ export function Header() {
   const { cart } = useCart();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isCartOpen, setIsCartOpen] = React.useState(false);
+  const pathname = usePathname();
   
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -50,7 +53,10 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-lg font-medium text-foreground/80 transition-colors hover:text-primary"
+                  className={cn(
+                    'text-lg font-medium transition-colors hover:text-primary',
+                    pathname === link.href ? 'text-primary' : 'text-foreground/80'
+                  )}
                 >
                   {link.label}
                 </Link>
@@ -107,7 +113,10 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="text-foreground/80 transition-colors hover:text-primary"
+                      className={cn(
+                        'transition-colors hover:text-primary',
+                        pathname === link.href ? 'text-primary' : 'text-foreground/80'
+                      )}
                     >
                       {link.label}
                     </Link>

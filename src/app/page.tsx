@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/carousel';
 import { getBooksBySubject } from '@/lib/data';
 import { BookCard } from '@/components/book-card';
-import Recommendations from '@/components/recommendations';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { SearchForm } from '@/components/search-form';
 
@@ -82,8 +81,6 @@ export default async function Home() {
           <CarouselNext className="hidden md:flex" />
         </Carousel>
       </section>
-
-      <Recommendations />
 
       <section className="container mx-auto px-4">
         <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Featured Collections</h2>

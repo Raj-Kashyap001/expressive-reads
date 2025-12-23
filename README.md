@@ -1,6 +1,6 @@
 # Expressive Reads
 
-A modern e-commerce store for books and notebooks, built with Next.js, ShadCN, Tailwind CSS, and powered by Genkit for AI features.
+A modern e-commerce store for books and notebooks, built with Next.js, ShadCN, and Tailwind CSS.
 
 ## Features
 
@@ -8,7 +8,6 @@ A modern e-commerce store for books and notebooks, built with Next.js, ShadCN, T
 *   **Theme Toggle:** Switch between light and dark modes.
 *   **Book Discovery:** Browse books by category or use the search functionality.
 *   **Live Data:** Fetches book information from the Open Library API.
-*   **AI Recommendations:** Personalized book suggestions powered by Google's Genkit.
 *   **Shopping Cart & Wishlist:** Fully functional cart and wishlist using client-side state management.
 *   **E-commerce Flow:** Product detail pages, checkout process, and user profiles.
 
@@ -17,7 +16,6 @@ A modern e-commerce store for books and notebooks, built with Next.js, ShadCN, T
 *   **Framework:** [Next.js](https://nextjs.org/) (App Router)
 *   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 *   **UI Components:** [ShadCN UI](https://ui.shadcn.com/)
-*   **AI:** [Genkit](https://firebase.google.com/docs/genkit)
 *   **Data Source:** [Open Library API](https://openlibrary.org/developers/api)
 
 ## Getting Started
@@ -39,11 +37,7 @@ To get a local copy up and running, follow these simple steps.
     ```sh
     npm install
     ```
-3.  Set up your environment variables. Create a `.env` file in the root of your project and add your Gemini API key:
-    ```
-    GEMINI_API_KEY=YOUR_API_KEY
-    ```
-4.  Run the development server:
+3.  Run the development server:
     ```sh
     npm run dev
     ```

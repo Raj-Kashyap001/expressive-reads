@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Search, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Carousel,
   CarouselContent,
@@ -14,6 +13,7 @@ import { getBooksBySubject } from '@/lib/data';
 import { BookCard } from '@/components/book-card';
 import Recommendations from '@/components/recommendations';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { SearchForm } from '@/components/search-form';
 
 export default async function Home() {
   const newArrivals = await getBooksBySubject('new', 8);
@@ -46,17 +46,10 @@ export default async function Home() {
             </p>
             
             <div className="mt-8 max-w-lg mx-auto">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search for your next favorite book..."
-                  className="w-full rounded-full bg-background/90 text-foreground h-16 pl-14 pr-32 text-lg border-2 border-transparent focus:border-primary focus:ring-primary"
-                />
-                <Button size="lg" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-12 px-6">
-                  Search
-                </Button>
-              </div>
+              <SearchForm 
+                inputClassName="w-full rounded-full bg-background/90 text-foreground h-16 pl-14 pr-32 text-lg border-2 border-transparent focus:border-primary focus:ring-primary"
+                buttonClassName="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-12 px-6"
+              />
             </div>
 
           </div>

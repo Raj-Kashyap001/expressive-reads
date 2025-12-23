@@ -12,6 +12,7 @@ import { CartSheet } from './cart-sheet';
 import React from 'react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
+import { SearchForm } from './search-form';
 
 const navLinks = [
   { href: '/books', label: 'Books' },
@@ -66,11 +67,9 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             <div className="hidden lg:block relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search books..."
-                className="w-full rounded-full bg-muted pl-10 h-11"
+              <SearchForm 
+                inputClassName="w-full rounded-full bg-muted pl-10 h-11"
+                showButton={false}
               />
             </div>
 

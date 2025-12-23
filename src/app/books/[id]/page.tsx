@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Star, BookOpen } from 'lucide-react';
-import { getBooksBySubject } from '@/lib/data';
+import { getBooksBySubject, searchBooks } from '@/lib/data';
 import { BookCard } from '@/components/book-card';
 import { Separator } from '@/components/ui/separator';
 import AddToCartButton from './add-to-cart-button';
@@ -18,8 +18,14 @@ async function getBookDetails(id: string): Promise<Book | null> {
       description = typeof work.description === 'string' ? work.description : work.description.value;
     }
 
-    const authorsResponse = await fetch(`https://openlibrary.org${work.authors[0].author.key}.json`);
-    const authorData = await authorsResponse.json();
+    let authorName = 'Unknown Author';
+    if (work.authors && work.authors[0]?.author?.key) {
+      const authorsResponse = await fetch(`https://openlibrary.org${work.authors[0].author.key}.json`);
+      if(authorsResponse.ok) {
+        const authorData = await authorsResponse.json();
+        authorName = authorData.name;
+      }
+    }
 
     const coverId = work.covers?.[0];
     const coverImage = coverId
@@ -35,18 +41,24 @@ async function getBookDetails(id: string): Promise<Book | null> {
             description: 'Default book cover',
             imageHint: 'book cover'
         };
+    
+    if (!coverId) {
+      // Don't show books without a cover from the API
+      // as they are often low quality data.
+      // But for detail page, we can show a placeholder.
+    }
 
     const book: Book = {
       id: id,
       title: work.title,
-      author: authorData.name || 'Unknown Author',
+      author: authorName,
       price: parseFloat((Math.random() * (20 - 10) + 10).toFixed(2)), // Placeholder price
       coverImage,
       categories: work.subjects?.slice(0, 3) || [],
       description,
       rating: work.ratings_average ? parseFloat(work.ratings_average.toFixed(1)) : parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
-      pageCount: work.number_of_pages || 0,
-      publishedDate: work.first_publish_date || 'N/A',
+      pageCount: work.number_of_pages || work.edition_count || 0,
+      publishedDate: work.first_publish_date || work.first_publish_year || 'N/A',
       isbn: work.isbn_13?.[0] || work.isbn_10?.[0] || 'N/A',
     };
     return book;

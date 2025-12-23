@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BookCard } from '@/components/book-card';
 import { categories, getBooksBySubject } from '@/lib/data';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { Book } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { searchBooks } from '@/lib/data';
+import { SearchForm } from '@/components/search-form';
 
 function BookCardSkeleton() {
   return (
@@ -28,37 +29,41 @@ function BookCardSkeleton() {
   );
 }
 
-export default function BooksPage() {
+function BooksPageContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
   const initialSearch = searchParams.get('q') || '';
   
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [priceRange, setPriceRange] = useState([0, 20]);
 
   useEffect(() => {
     const fetchBooks = async () => {
       setIsLoading(true);
-      const subject = selectedCategory === 'all' ? 'fiction' : selectedCategory;
-      const fetchedBooks = await getBooksBySubject(subject, 40);
+      let fetchedBooks;
+      if (initialSearch) {
+        fetchedBooks = await searchBooks(initialSearch, 40);
+        setSelectedCategory('all'); // Reset category when searching
+      } else {
+        const subject = selectedCategory === 'all' ? 'fiction' : selectedCategory;
+        fetchedBooks = await getBooksBySubject(subject, 40);
+      }
       setBooks(fetchedBooks);
       setIsLoading(false);
     };
 
     fetchBooks();
-  }, [selectedCategory]);
+  }, [selectedCategory, initialSearch]);
 
   const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) || book.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = book.price >= priceRange[0] && book.price <= priceRange[1];
-    return matchesSearch && matchesPrice;
+    return matchesPrice;
   });
   
   const handleResetFilters = () => {
-    setSearchTerm('');
+    // setSearchTerm('');
     setSelectedCategory('all');
     setPriceRange([0, 20]);
   };
@@ -81,13 +86,10 @@ export default function BooksPage() {
               <div>
                 <Label htmlFor="search" className="text-base font-semibold">Search</Label>
                  <div className="relative mt-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Title or author..."
-                      className="pl-10 h-11 rounded-full bg-background"
+                    <SearchForm 
+                      initialSearch={initialSearch}
+                      inputClassName="h-11 rounded-full bg-background"
+                      showButton={false}
                     />
                 </div>
               </div>
@@ -157,5 +159,13 @@ export default function BooksPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function BooksPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BooksPageContent />
+    </Suspense>
   );
 }

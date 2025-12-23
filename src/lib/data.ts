@@ -3,6 +3,32 @@ import { PlaceHolderImages } from './placeholder-images';
 
 const getImage = (id: string) => PlaceHolderImages.find(img => img.id === id) || PlaceHolderImages[0];
 
+const mapWorkToBook = (work: any, index: number): Book | null => {
+  const coverId = work.cover_id;
+  if (!coverId) return null; // Skip books without a cover
+
+  const coverImage = {
+    id: `cover-${work.key}`,
+    imageUrl: `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`,
+    description: `Cover of ${work.title}`,
+    imageHint: 'book cover'
+  };
+
+  return {
+    id: work.key.replace('/works/', ''),
+    title: work.title,
+    author: work.authors?.[0]?.name || 'Unknown Author',
+    price: parseFloat((Math.random() * (20 - 10) + 10).toFixed(2)), // Placeholder price
+    coverImage,
+    categories: work.subject?.slice(0, 3) || [],
+    description: 'No description available.',
+    rating: work.ratings_average ? parseFloat(work.ratings_average.toFixed(1)) : parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
+    pageCount: work.edition_count, // Not always accurate page count
+    publishedDate: work.first_publish_year?.toString() || 'N/A',
+    isbn: work.isbn?.[0] || 'N/A',
+  };
+}
+
 export const getBooksBySubject = async (subject: string, limit = 10): Promise<Book[]> => {
   try {
     const response = await fetch(`https://openlibrary.org/subjects/${subject}.json?limit=${limit}`);
@@ -12,32 +38,9 @@ export const getBooksBySubject = async (subject: string, limit = 10): Promise<Bo
     }
     const data = await response.json();
 
-    const books: Book[] = data.works.map((work: any, index: number) => {
-      const isbn = work.isbn_13?.[0] || work.isbn_10?.[0] || `OLID:${work.cover_edition_key}`;
-      const coverId = work.cover_id;
-      const coverImage = coverId
-        ? {
-            id: `cover-${work.key}`,
-            imageUrl: `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`,
-            description: `Cover of ${work.title}`,
-            imageHint: 'book cover'
-          }
-        : getImage(`book-cover-${(index % 12) + 1}`);
-
-      return {
-        id: work.key.replace('/works/', ''),
-        title: work.title,
-        author: work.authors?.[0]?.name || 'Unknown Author',
-        price: parseFloat((Math.random() * (20 - 10) + 10).toFixed(2)), // Placeholder price
-        coverImage,
-        categories: work.subject || [],
-        description: typeof work.description === 'string' ? work.description : 'No description available.',
-        rating: work.average_rating ? parseFloat(work.average_rating.toFixed(1)) : parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
-        pageCount: work.edition_count, // Not always accurate page count
-        publishedDate: work.first_publish_year?.toString() || 'N/A',
-        isbn: isbn,
-      };
-    }).filter((book: Book) => book.coverImage.imageUrl.includes('covers.openlibrary.org')); // Only include books with covers
+    const books = data.works
+      .map(mapWorkToBook)
+      .filter((book: Book | null): book is Book => book !== null);
 
     return books;
   } catch (error) {
@@ -45,6 +48,27 @@ export const getBooksBySubject = async (subject: string, limit = 10): Promise<Bo
     return [];
   }
 };
+
+export const searchBooks = async (query: string, limit = 10): Promise<Book[]> => {
+  try {
+    const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}`);
+    if (!response.ok) {
+      console.error('Failed to search books for query:', query);
+      return [];
+    }
+    const data = await response.json();
+
+    const books = data.docs
+      .map(mapWorkToBook)
+      .filter((book: Book | null): book is Book => book !== null);
+      
+    return books;
+  } catch (error) {
+    console.error('Error searching books from Open Library:', error);
+    return [];
+  }
+};
+
 
 export const books: Book[] = [
   {
